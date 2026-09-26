@@ -1,7 +1,14 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "kouvera",
+  "main": ".output/server/index.mjs",
   "compatibility_date": "2025-07-15",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "no_nodejs_compat_v2"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".output/public",
+    "run_worker_first": ["/api/*"],
+  },
   "d1_databases": [
     {
       "binding": "BLOG_DB",
