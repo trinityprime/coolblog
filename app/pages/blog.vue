@@ -6,71 +6,99 @@ type BlogPost = {
   createdAt: string;
 };
 
-const storageKey = "kouvera.blog.posts";
+const adminKeyStorageKey = "kouvera.blog.admin-key";
 const posts = ref<BlogPost[]>([]);
 const title = ref("");
 const content = ref("");
+const adminKey = ref("");
 const saveMessage = ref("");
+const loadMessage = ref("");
+const isLoading = ref(true);
+const isSaving = ref(false);
+const deletingPostId = ref<string | null>(null);
 
 useHead({
   title: "kouvera! — blog",
 });
 
-function isBlogPost(value: unknown): value is BlogPost {
-  if (typeof value !== "object" || value === null) return false;
-  const post = value as Record<string, unknown>;
+function getErrorMessage(error: unknown, fallback: string) {
+  if (typeof error !== "object" || error === null) return fallback;
+  const apiError = error as {
+    data?: { statusMessage?: string };
+    message?: string;
+  };
 
-  return (
-    typeof post.id === "string" &&
-    typeof post.title === "string" &&
-    typeof post.content === "string" &&
-    typeof post.createdAt === "string"
-  );
+  return apiError.data?.statusMessage ?? apiError.message ?? fallback;
 }
 
-function persistPosts() {
+async function loadPosts() {
+  isLoading.value = true;
+  loadMessage.value = "";
+
   try {
-    localStorage.setItem(storageKey, JSON.stringify(posts.value));
-    saveMessage.value = "";
-    return true;
-  } catch {
-    saveMessage.value = "Could not save posts in this browser.";
-    return false;
+    posts.value = await $fetch<BlogPost[]>("/api/blog");
+  } catch (error) {
+    loadMessage.value = getErrorMessage(
+      error,
+      "Posts could not be loaded. Check the Cloudflare D1 setup.",
+    );
+  } finally {
+    isLoading.value = false;
   }
 }
 
-onMounted(() => {
-  try {
-    const savedPosts = localStorage.getItem(storageKey);
-    if (!savedPosts) return;
-
-    const parsed: unknown = JSON.parse(savedPosts);
-    if (Array.isArray(parsed)) posts.value = parsed.filter(isBlogPost);
-  } catch {
-    saveMessage.value = "Saved posts could not be read.";
-  }
+onMounted(async () => {
+  adminKey.value = sessionStorage.getItem(adminKeyStorageKey) ?? "";
+  await loadPosts();
 });
 
-function publishPost() {
+async function publishPost() {
   const cleanTitle = title.value.trim();
   const cleanContent = content.value.trim();
-  if (!cleanTitle || !cleanContent) return;
+  if (!cleanTitle || !cleanContent || !adminKey.value.trim()) return;
 
-  posts.value.unshift({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    title: cleanTitle,
-    content: cleanContent,
-    createdAt: new Date().toISOString(),
-  });
+  isSaving.value = true;
+  saveMessage.value = "";
 
-  title.value = "";
-  content.value = "";
-  persistPosts();
+  try {
+    const post = await $fetch<BlogPost>("/api/blog", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminKey.value}` },
+      body: { title: cleanTitle, content: cleanContent },
+    });
+
+    posts.value.unshift(post);
+    title.value = "";
+    content.value = "";
+    sessionStorage.setItem(adminKeyStorageKey, adminKey.value);
+  } catch (error) {
+    saveMessage.value = getErrorMessage(
+      error,
+      "The post could not be published.",
+    );
+  } finally {
+    isSaving.value = false;
+  }
 }
 
-function deletePost(id: string) {
-  posts.value = posts.value.filter((post) => post.id !== id);
-  persistPosts();
+async function deletePost(id: string) {
+  deletingPostId.value = id;
+  saveMessage.value = "";
+
+  try {
+    await $fetch(`/api/blog/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${adminKey.value}` },
+    });
+    posts.value = posts.value.filter((post) => post.id !== id);
+  } catch (error) {
+    saveMessage.value = getErrorMessage(
+      error,
+      "The post could not be deleted.",
+    );
+  } finally {
+    deletingPostId.value = null;
+  }
 }
 
 function formatDate(date: string) {
@@ -83,9 +111,21 @@ function formatDate(date: string) {
 <template>
   <div class="blog-page">
     <section class="container blog-composer" aria-labelledby="composer-title">
-      <h1 id="composer-title">Write a post</h1>
+      <h1 id="composer-title">Owner access</h1>
 
-      <form @submit.prevent="publishPost">
+      <div class="blog-field">
+        <label for="admin-key">Owner key</label>
+        <input
+          id="admin-key"
+          v-model="adminKey"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Your private publishing key"
+        />
+      </div>
+
+      <form v-if="adminKey.trim()" @submit.prevent="publishPost">
+        <h2 class="blog-form-title">Write a post</h2>
         <div class="blog-field">
           <label for="post-title">Title</label>
           <input
@@ -111,10 +151,16 @@ function formatDate(date: string) {
         </div>
 
         <div class="blog-actions">
-          <button class="blog-submit" type="submit">Publish post</button>
+          <button class="blog-submit" type="submit" :disabled="isSaving">
+            {{ isSaving ? "Publishing..." : "Publish post" }}
+          </button>
           <span class="blog-count">{{ posts.length }} posts</span>
         </div>
       </form>
+
+      <p v-else class="blog-help">
+        Enter your owner key to publish or manage posts.
+      </p>
 
       <p v-if="saveMessage" class="blog-message" role="status">
         {{ saveMessage }}
@@ -124,7 +170,16 @@ function formatDate(date: string) {
     <section class="container blog-feed" aria-labelledby="blog-title">
       <h1 id="blog-title">The blog</h1>
 
-      <p v-if="posts.length === 0" class="blog-empty">
+      <p v-if="isLoading" class="blog-empty">Loading posts...</p>
+
+      <p v-else-if="loadMessage" class="blog-message" role="alert">
+        {{ loadMessage }}
+        <button class="blog-delete" type="button" @click="loadPosts">
+          Try again
+        </button>
+      </p>
+
+      <p v-else-if="posts.length === 0" class="blog-empty">
         Nothing here yet. Your first post starts here.
       </p>
 
@@ -134,12 +189,14 @@ function formatDate(date: string) {
             formatDate(post.createdAt)
           }}</time>
           <button
+            v-if="adminKey.trim()"
             class="blog-delete"
             type="button"
+            :disabled="deletingPostId === post.id"
             :aria-label="`Delete ${post.title}`"
             @click="deletePost(post.id)"
           >
-            Delete
+            {{ deletingPostId === post.id ? "Deleting..." : "Delete" }}
           </button>
         </div>
         <h2>{{ post.title }}</h2>

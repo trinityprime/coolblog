@@ -402,6 +402,13 @@ li::before {
   font-size: 0.8em;
 }
 
+.blog-form-title {
+  margin: 0 0 18px;
+  color: var(--color-accent);
+  font-family: "VCR OSD Mono", sans-serif;
+  font-size: 1em;
+}
+
 .blog-field input,
 .blog-field textarea {
   width: 100%;
@@ -468,6 +475,13 @@ li::before {
   transform: translateY(-1px);
 }
 
+.blog-submit:disabled,
+.blog-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .blog-count,
 .blog-entry-meta time {
   color: rgba(255, 255, 255, 0.64);
@@ -478,6 +492,12 @@ li::before {
   margin: 14px 0 0;
   color: #ffd1df;
   font-size: 0.9em;
+}
+
+.blog-help {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95em;
 }
 
 .blog-empty {

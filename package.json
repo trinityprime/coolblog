@@ -7,11 +7,16 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "db:migrate:local": "wrangler d1 migrations apply kouvera-blog --local",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "nuxt": "^4.5.2",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "miniflare": "^5.20260925.0-alpha",
+    "wrangler": "^4.141.0"
   }
 }

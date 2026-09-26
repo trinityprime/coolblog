@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "compatibility_date": "2025-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "BLOG_DB",
+      "database_name": "kouvera-blog",
+      "database_id": "fdf62dda-760c-4991-9f53-bd3ddab3dc81",
+      "migrations_dir": "migrations",
+    },
+  ],
+}
