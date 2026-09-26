@@ -45,9 +45,9 @@ useHead({
           holy shit there were so many)
         </li>
         <li>
-          right now, I've got 1 acrylic, 1 abs, and 1 stacked acrylic alice
-          keeb. Thinking of getting an alu one but It'll probably just be
-          collecting dust...
+          right now, I've got 1 acrylic (tofu65), 1 abs (gmk67), and 1 aluminium
+          one (rainy75). though i'm only using the aluminium one and the rest
+          are collecting dust...
         </li>
         <li>
           other than working on this website, I do game alot! I alternate
