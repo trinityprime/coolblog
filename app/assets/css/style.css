@@ -1,0 +1,394 @@
+:root {
+  --color-bg-dark: #28303a;
+  --color-bg-light: #5b636d;
+  --color-accent: #ee487d;
+  --color-accent-light: #ffffff;
+  --color-text-light: #ffffff;
+  --color-text-dark: #1e1e1e;
+}
+
+@font-face {
+  font-family: "VCR OSD Mono";
+  src: url("/fonts/VCR_OSD_MONO_1.001.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ShareTech-Regular";
+  src: url("/fonts/ShareTech-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  font-family: "VCR OSD Mono", sans-serif;
+  font-size: 1em;
+  color: var(--color-text-light);
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+  z-index: 2147483647;
+}
+
+.background--custom {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+
+  background: url("/images/topography.png") repeat,
+    linear-gradient(45deg, #5b636d, #28303a, #ac4565, #5b636d);
+
+  background-size: auto, 400% 400%;
+  animation: gradient 10s ease infinite;
+
+  background-blend-mode: multiply;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 0%, 0% 0%;
+  }
+  50% {
+    background-position: 0% 0%, 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%, 0% 0%;
+  }
+}
+
+main {
+  margin: 0 auto;
+  width: 60%;
+}
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+/* layout */
+.site-center {
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.horizontal-containers {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.horizontal-containers > div {
+  flex: 1;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* header */
+.header {
+  text-align: right;
+  color: var(--color-accent);
+}
+
+.header-mobile {
+  display: none;
+}
+
+.header-mobile h1 {
+  letter-spacing: 5px;
+}
+
+.jump-text {
+  display: inline-block;
+  transition: transform 0.25s ease-out;
+}
+
+.jump-text:hover {
+  transform: translateY(-15px);
+}
+
+/* sidebar */
+.sidebar {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+  min-width: 160px;
+  height: fit-content;
+  padding: 15px;
+  background: var(--color-bg-dark);
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-img {
+  width: 100px;
+}
+
+h1 {
+  font-family: VCR OSD Mono, sans-serif;
+  color: var(--color-accent);
+}
+
+nav h1 {
+  padding-left: 2.4rem;
+  color: var(--color-text-light);
+}
+
+.vcr-clock {
+  font-family: "VCR OSD Mono", monospace;
+  font-size: 1.5rem;
+  color: var(--color-text-light);
+  text-align: center;
+  margin: 20px 0;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px var(--color-accent), 0 0 10px var(--color-accent),
+    0 0 20px var(--color-accent);
+}
+
+.mobile-nav {
+  display: none;
+}
+
+.hamburger {
+  display: none;
+}
+
+.nav-links {
+  margin: 0 0 0 2.4rem;
+  padding: 0 0 1px 0;
+  list-style: none;
+}
+
+.nav-links li {
+  margin: 0.4em 0;
+  white-space: nowrap;
+}
+
+.socials {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.steam {
+  content: url("/images/steamicon.png");
+}
+
+.steam:hover {
+  content: url("/images/steampressed.png");
+}
+
+.github {
+  content: url("/images/githubicon.png");
+}
+
+.github:hover {
+  content: url("/images/githubpressed.png");
+}
+
+.discord {
+  content: url("/images/discordicon.png");
+}
+
+.discord:hover {
+  content: url("/images/discordpressed.png");
+}
+
+.email {
+  content: url("/images/emailicon.png");
+}
+
+.email:hover {
+  content: url("/images/emailpressed.png");
+}
+
+.banner img {
+  width: 100%;
+  text-align: center;
+}
+
+.image {
+  width: 100px;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 15px;
+}
+
+.nested-ul {
+  margin-top: 15px;
+  margin-left: 25px;
+}
+
+li {
+  margin-bottom: 15px;
+}
+
+li::before {
+  content: ">";
+  color: var(--color-accent);
+  margin-right: 10px;
+  vertical-align: baseline;
+}
+
+.nav-links a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.nav-links a:hover::before {
+  content: url("/images/favicon.gif");
+  margin-right: 10px;
+  vertical-align: baseline;
+}
+
+/* containers */
+.container {
+  margin: 0 auto 20px;
+  padding: 25px;
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-bg-dark);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  font-family: "ShareTech-Regular", sans-serif;
+  font-size: 1.2em;
+}
+
+.container:hover {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 0 20px
+    color-mix(in srgb, var(--color-accent-light) 20%, transparent);
+  transition: all 0.3s ease;
+}
+
+.footer {
+  margin: 0 auto 10px;
+  padding: 10px;
+  font-family: "ShareTech-Regular", sans-serif;
+  font-size: 1.2em;
+}
+
+.footer p {
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* responsiveness */
+
+@media (max-width: 767px) {
+  main {
+    width: 90%;
+  }
+
+  .header {
+    display: none;
+  }
+
+  .header-mobile {
+    display: flex;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-nav {
+    width: 100%;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  .mobile-nav.open {
+    max-height: 200px;
+  }
+
+  .mobile-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+  }
+
+  .mobile-nav li {
+    margin: 10px 0;
+  }
+
+  .hamburger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background: var(--color-accent);
+    transition: all 0.3s ease;
+  }
+
+  .hamburger.active span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .hamburger.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger.active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  .socials {
+    display: none;
+  }
+
+  .content {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
+  main {
+    width: 90%;
+  }
+}
