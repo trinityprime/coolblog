@@ -6,30 +6,19 @@ type BlogPost = {
   createdAt: string;
 };
 
-type BlogStatus = {
-  message: string;
-  updatedAt: string | null;
-};
-
 const posts = ref<BlogPost[]>([]);
 const route = useRoute();
 const isBlogPostRoute = computed(() => route.path.startsWith("/blog/posts/"));
 const title = ref("");
 const content = ref("");
 const adminKey = ref("");
-const blogStatus = ref("");
-const blogStatusDraft = ref("");
-const statusUpdatedAt = ref<string | null>(null);
 const saveMessage = ref("");
 const loadMessage = ref("");
-const statusMessage = ref("");
 const isLoading = ref(true);
 const isSaving = ref(false);
-const isSavingStatus = ref(false);
 const isSigningIn = ref(false);
 const isAdmin = ref(false);
 const showSignIn = ref(false);
-const showStatusEditor = ref(false);
 const deletingPostId = ref<string | null>(null);
 const latestPost = computed(() => posts.value[0]!);
 
@@ -63,17 +52,6 @@ async function loadPosts() {
   }
 }
 
-async function loadBlogStatus() {
-  try {
-    const status = await $fetch<BlogStatus>("/api/blog/status");
-    blogStatus.value = status.message;
-    statusUpdatedAt.value = status.updatedAt;
-    blogStatusDraft.value = status.message;
-  } catch {
-    statusMessage.value = "The status could not be loaded.";
-  }
-}
-
 onMounted(async () => {
   try {
     const session = await $fetch<{ authenticated: boolean }>(
@@ -83,7 +61,7 @@ onMounted(async () => {
   } catch {
     isAdmin.value = false;
   }
-  await Promise.all([loadPosts(), loadBlogStatus()]);
+  await loadPosts();
 });
 
 async function signIn() {
@@ -111,34 +89,8 @@ async function signOut() {
   try {
     await $fetch("/api/blog/session", { method: "DELETE" });
     isAdmin.value = false;
-    showStatusEditor.value = false;
   } catch (error) {
     saveMessage.value = getErrorMessage(error, "Sign out failed.");
-  }
-}
-
-async function saveBlogStatus() {
-  const message = blogStatusDraft.value.trim();
-  if (!message) return;
-
-  isSavingStatus.value = true;
-  statusMessage.value = "";
-
-  try {
-    const status = await $fetch<BlogStatus>("/api/blog/status", {
-      method: "PUT",
-      body: { message },
-    });
-    blogStatus.value = status.message;
-    statusUpdatedAt.value = status.updatedAt;
-    showStatusEditor.value = false;
-  } catch (error) {
-    statusMessage.value = getErrorMessage(
-      error,
-      "The status could not be saved.",
-    );
-  } finally {
-    isSavingStatus.value = false;
   }
 }
 
@@ -253,7 +205,7 @@ function getExcerpt(postContent: string) {
     </section>
 
     <section class="container blog-feed" aria-labelledby="blog-title">
-      <div class="banner">
+      <div class="blog-banner">
         <img src="/images/asciithread.gif" alt="ascii adventure banner" />
       </div>
       <div class="blog-feed-heading">
@@ -279,49 +231,6 @@ function getExcerpt(postContent: string) {
           Sign out
         </button>
       </div>
-
-      <div class="blog-status-bar" aria-label="Current status">
-        <span class="blog-status-dot" aria-hidden="true"></span>
-        <span class="blog-status-label">STATUS</span>
-        <p>{{ blogStatus || "No status update" }}</p>
-        <time v-if="statusUpdatedAt" :datetime="statusUpdatedAt">
-          {{ formatDate(statusUpdatedAt) }}
-        </time>
-        <button
-          v-if="isAdmin"
-          class="blog-status-edit"
-          type="button"
-          :aria-expanded="showStatusEditor"
-          aria-controls="blog-status-editor"
-          @click="showStatusEditor = !showStatusEditor"
-        >
-          {{ showStatusEditor ? "Close" : "Edit" }}
-        </button>
-      </div>
-
-      <form
-        v-if="isAdmin && showStatusEditor"
-        id="blog-status-editor"
-        class="blog-status-editor"
-        @submit.prevent="saveBlogStatus"
-      >
-        <label for="blog-status-input">Status</label>
-        <div class="blog-status-controls">
-          <input
-            id="blog-status-input"
-            v-model="blogStatusDraft"
-            maxlength="180"
-            required
-            placeholder="What are you up to?"
-          />
-          <button class="blog-submit" type="submit" :disabled="isSavingStatus">
-            {{ isSavingStatus ? "Saving..." : "Update" }}
-          </button>
-        </div>
-        <p v-if="statusMessage" class="blog-message" role="status">
-          {{ statusMessage }}
-        </p>
-      </form>
 
       <form
         v-if="!isAdmin && showSignIn"
@@ -349,14 +258,6 @@ function getExcerpt(postContent: string) {
           {{ saveMessage }}
         </p>
       </form>
-
-      <p
-        v-if="statusMessage && !showStatusEditor"
-        class="blog-message"
-        role="status"
-      >
-        {{ statusMessage }}
-      </p>
 
       <p v-if="isLoading" class="blog-empty">Loading posts...</p>
 

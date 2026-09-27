@@ -15,14 +15,14 @@ This app now requires a Cloudflare Worker runtime for the blog API. Configure th
 ### Cloudflare setup
 
 1. In Cloudflare, create a D1 database named `kouvera-blog`.
-2. Apply the SQL in `migrations/0001_create_blog_posts.sql` and `migrations/0002_create_blog_status.sql` to the database, or run the Wrangler D1 migration command against the remote database.
+2. Apply the migrations with Wrangler, or run the SQL in `migrations/0001_create_blog_posts.sql` in the database's SQL console.
 3. In your Worker's **Settings > Bindings**, add a D1 database binding named `BLOG_DB` and select `kouvera-blog`.
 4. In **Settings > Variables and Secrets**, add `BLOG_ADMIN_TOKEN` as a secret. Use a long random value; do not add it as a plain variable or commit it.
 5. Redeploy the Worker so the D1 binding and secret are available to the API routes.
 
 The Worker build uses the `cloudflare_module` Nitro preset and `nodejs_compat` flag from `nuxt.config.ts` and `wrangler.jsonc`.
 
-The Worker reads posts and the public status message from D1. Sign in with the owner key on the blog page to create a signed, HttpOnly session cookie that lasts 24 hours. The key is not stored in browser storage; sign in again after the cookie expires or on another device. While signed in, use the status strip's Edit control to update the message.
+The Worker reads posts from D1. Sign in with the owner key on the blog page to create a signed, HttpOnly session cookie that lasts 24 hours. The key is not stored in browser storage; sign in again after the cookie expires or on another device.
 
 ### Local development
 

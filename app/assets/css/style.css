@@ -293,6 +293,15 @@ nav h1 {
   padding-bottom: 10px;
 }
 
+.blog-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+  padding-bottom: 10px;
+  filter: invert(0.8) hue-rotate(180deg) saturate(1.2);
+}
+
 .image {
   width: 100px;
 }
@@ -458,93 +467,6 @@ li::before {
   margin: 0 0 22px;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--surface-border);
-}
-
-.blog-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  margin-bottom: 24px;
-  padding: 10px 12px;
-  border: 1px solid rgba(146, 210, 125, 0.25);
-  border-left: 3px solid #92d27d;
-  background: rgba(20, 25, 31, 0.34);
-}
-
-.blog-status-dot {
-  flex: 0 0 7px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #92d27d;
-  box-shadow: 0 0 8px rgba(146, 210, 125, 0.55);
-}
-
-.blog-status-label,
-.blog-status-bar time {
-  flex: 0 0 auto;
-  color: rgba(255, 255, 255, 0.58);
-  font-family: "VCR OSD Mono", sans-serif;
-  font-size: 0.62em;
-}
-
-.blog-status-bar p {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.blog-status-edit {
-  flex: 0 0 auto;
-  padding: 2px 5px;
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.62);
-  font: inherit;
-  font-size: 0.7em;
-  cursor: pointer;
-}
-
-.blog-status-edit:hover {
-  color: var(--color-accent);
-}
-
-.blog-status-editor {
-  margin: -10px 0 24px;
-  padding: 14px;
-  border: 1px solid var(--surface-border);
-  background: rgba(20, 25, 31, 0.24);
-}
-
-.blog-status-editor label {
-  display: block;
-  margin-bottom: 7px;
-  color: rgba(255, 255, 255, 0.86);
-  font-family: "VCR OSD Mono", sans-serif;
-  font-size: 0.72em;
-}
-
-.blog-status-controls {
-  display: flex;
-  gap: 9px;
-}
-
-.blog-status-controls input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  background: rgba(20, 25, 31, 0.38);
-  color: var(--color-text-light);
-  font: inherit;
-}
-
-.blog-status-controls input:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
 }
 
 .blog-field input,
@@ -857,34 +779,6 @@ li::before {
     padding: 18px 0 0;
     border-top: 1px solid var(--surface-border);
     border-left: 0;
-  }
-
-  .blog-status-bar {
-    flex-wrap: wrap;
-  }
-
-  .blog-status-bar p {
-    flex-basis: calc(100% - 100px);
-    order: 1;
-    margin-left: 17px;
-  }
-
-  .blog-status-bar time {
-    order: 2;
-    margin-left: 17px;
-  }
-
-  .blog-status-edit {
-    order: 3;
-    margin-left: auto;
-  }
-
-  .blog-status-controls {
-    flex-direction: column;
-  }
-
-  .blog-status-controls .blog-submit {
-    align-self: flex-start;
   }
 
   .desktop-nav {
