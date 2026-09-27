@@ -6,15 +6,28 @@ type BlogPost = {
   createdAt: string;
 };
 
-const adminKeyStorageKey = "kouvera.blog.admin-key";
+type BlogStatus = {
+  message: string;
+  updatedAt: string | null;
+};
+
 const posts = ref<BlogPost[]>([]);
 const title = ref("");
 const content = ref("");
 const adminKey = ref("");
+const blogStatus = ref("");
+const blogStatusDraft = ref("");
+const statusUpdatedAt = ref<string | null>(null);
 const saveMessage = ref("");
 const loadMessage = ref("");
+const statusMessage = ref("");
 const isLoading = ref(true);
 const isSaving = ref(false);
+const isSavingStatus = ref(false);
+const isSigningIn = ref(false);
+const isAdmin = ref(false);
+const showSignIn = ref(false);
+const showStatusEditor = ref(false);
 const deletingPostId = ref<string | null>(null);
 
 useHead({
@@ -47,15 +60,86 @@ async function loadPosts() {
   }
 }
 
+async function loadBlogStatus() {
+  try {
+    const status = await $fetch<BlogStatus>("/api/blog/status");
+    blogStatus.value = status.message;
+    statusUpdatedAt.value = status.updatedAt;
+    blogStatusDraft.value = status.message;
+  } catch {
+    statusMessage.value = "The status could not be loaded.";
+  }
+}
+
 onMounted(async () => {
-  adminKey.value = sessionStorage.getItem(adminKeyStorageKey) ?? "";
-  await loadPosts();
+  try {
+    const session = await $fetch<{ authenticated: boolean }>(
+      "/api/blog/session",
+    );
+    isAdmin.value = session.authenticated;
+  } catch {
+    isAdmin.value = false;
+  }
+  await Promise.all([loadPosts(), loadBlogStatus()]);
 });
+
+async function signIn() {
+  if (!adminKey.value.trim()) return;
+
+  isSigningIn.value = true;
+  saveMessage.value = "";
+
+  try {
+    await $fetch("/api/blog/session", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminKey.value}` },
+    });
+    isAdmin.value = true;
+    showSignIn.value = false;
+    adminKey.value = "";
+  } catch (error) {
+    saveMessage.value = getErrorMessage(error, "Sign in failed.");
+  } finally {
+    isSigningIn.value = false;
+  }
+}
+
+async function signOut() {
+  try {
+    await $fetch("/api/blog/session", { method: "DELETE" });
+    isAdmin.value = false;
+    showStatusEditor.value = false;
+  } catch (error) {
+    saveMessage.value = getErrorMessage(error, "Sign out failed.");
+  }
+}
+
+async function saveBlogStatus() {
+  const message = blogStatusDraft.value.trim();
+  if (!message) return;
+
+  isSavingStatus.value = true;
+  statusMessage.value = "";
+
+  try {
+    const status = await $fetch<BlogStatus>("/api/blog/status", {
+      method: "PUT",
+      body: { message },
+    });
+    blogStatus.value = status.message;
+    statusUpdatedAt.value = status.updatedAt;
+    showStatusEditor.value = false;
+  } catch (error) {
+    statusMessage.value = getErrorMessage(error, "The status could not be saved.");
+  } finally {
+    isSavingStatus.value = false;
+  }
+}
 
 async function publishPost() {
   const cleanTitle = title.value.trim();
   const cleanContent = content.value.trim();
-  if (!cleanTitle || !cleanContent || !adminKey.value.trim()) return;
+  if (!cleanTitle || !cleanContent || !isAdmin.value) return;
 
   isSaving.value = true;
   saveMessage.value = "";
@@ -63,14 +147,12 @@ async function publishPost() {
   try {
     const post = await $fetch<BlogPost>("/api/blog", {
       method: "POST",
-      headers: { Authorization: `Bearer ${adminKey.value}` },
       body: { title: cleanTitle, content: cleanContent },
     });
 
     posts.value.unshift(post);
     title.value = "";
     content.value = "";
-    sessionStorage.setItem(adminKeyStorageKey, adminKey.value);
   } catch (error) {
     saveMessage.value = getErrorMessage(
       error,
@@ -88,7 +170,6 @@ async function deletePost(id: string) {
   try {
     await $fetch(`/api/blog/${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${adminKey.value}` },
     });
     posts.value = posts.value.filter((post) => post.id !== id);
   } catch (error) {
@@ -110,22 +191,16 @@ function formatDate(date: string) {
 
 <template>
   <div class="blog-page">
-    <section class="container blog-composer" aria-labelledby="composer-title">
-      <h1 id="composer-title">Owner access</h1>
-
-      <div class="blog-field">
-        <label for="admin-key">Owner key</label>
-        <input
-          id="admin-key"
-          v-model="adminKey"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Your private publishing key"
-        />
+    <section
+      v-if="isAdmin"
+      class="container blog-composer"
+      aria-labelledby="composer-title"
+    >
+      <div class="blog-owner-heading">
+        <h2 id="composer-title" class="blog-form-title">Write a post</h2>
       </div>
 
-      <form v-if="adminKey.trim()" @submit.prevent="publishPost">
-        <h2 class="blog-form-title">Write a post</h2>
+      <form @submit.prevent="publishPost">
         <div class="blog-field">
           <label for="post-title">Title</label>
           <input
@@ -158,17 +233,105 @@ function formatDate(date: string) {
         </div>
       </form>
 
-      <p v-else class="blog-help">
-        Enter your owner key to publish or manage posts.
-      </p>
-
       <p v-if="saveMessage" class="blog-message" role="status">
         {{ saveMessage }}
       </p>
     </section>
 
     <section class="container blog-feed" aria-labelledby="blog-title">
-      <h1 id="blog-title">The blog</h1>
+      <div class="blog-feed-heading">
+        <div>
+          <p class="blog-kicker">A PERSONAL LOG</p>
+          <h1 id="blog-title">Welcome to my blog</h1>
+        </div>
+        <button
+          v-if="!isAdmin"
+          class="blog-sign-in-trigger"
+          type="button"
+          :aria-expanded="showSignIn"
+          aria-controls="blog-sign-in-form"
+          @click="showSignIn = !showSignIn"
+        >
+          {{ showSignIn ? "Cancel" : "Owner sign in" }}
+        </button>
+        <button v-else class="blog-sign-in-trigger" type="button" @click="signOut">
+          Sign out
+        </button>
+      </div>
+
+      <div class="blog-status-bar" aria-label="Current status">
+        <span class="blog-status-dot" aria-hidden="true"></span>
+        <span class="blog-status-label">STATUS</span>
+        <p>{{ blogStatus || "No status update" }}</p>
+        <time v-if="statusUpdatedAt" :datetime="statusUpdatedAt">
+          {{ formatDate(statusUpdatedAt) }}
+        </time>
+        <button
+          v-if="isAdmin"
+          class="blog-status-edit"
+          type="button"
+          :aria-expanded="showStatusEditor"
+          aria-controls="blog-status-editor"
+          @click="showStatusEditor = !showStatusEditor"
+        >
+          {{ showStatusEditor ? "Close" : "Edit" }}
+        </button>
+      </div>
+
+      <form
+        v-if="isAdmin && showStatusEditor"
+        id="blog-status-editor"
+        class="blog-status-editor"
+        @submit.prevent="saveBlogStatus"
+      >
+        <label for="blog-status-input">Status</label>
+        <div class="blog-status-controls">
+          <input
+            id="blog-status-input"
+            v-model="blogStatusDraft"
+            maxlength="180"
+            required
+            placeholder="What are you up to?"
+          />
+          <button class="blog-submit" type="submit" :disabled="isSavingStatus">
+            {{ isSavingStatus ? "Saving..." : "Update" }}
+          </button>
+        </div>
+        <p v-if="statusMessage" class="blog-message" role="status">
+          {{ statusMessage }}
+        </p>
+      </form>
+
+      <form
+        v-if="!isAdmin && showSignIn"
+        id="blog-sign-in-form"
+        class="blog-sign-in-form"
+        @submit.prevent="signIn"
+      >
+        <div class="blog-field">
+          <label for="admin-key">Owner key</label>
+          <input
+            id="admin-key"
+            v-model="adminKey"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Your private publishing key"
+            required
+          />
+        </div>
+        <div class="blog-actions">
+          <button class="blog-submit" type="submit" :disabled="isSigningIn">
+            {{ isSigningIn ? "Signing in..." : "Sign in" }}
+          </button>
+        </div>
+        <p v-if="saveMessage" class="blog-message" role="status">
+          {{ saveMessage }}
+        </p>
+      </form>
+
+      <p v-if="statusMessage && !showStatusEditor" class="blog-message" role="status">
+        {{ statusMessage }}
+      </p>
 
       <p v-if="isLoading" class="blog-empty">Loading posts...</p>
 
@@ -183,25 +346,46 @@ function formatDate(date: string) {
         Nothing here yet. Your first post starts here.
       </p>
 
-      <article v-for="post in posts" :key="post.id" class="blog-entry">
-        <div class="blog-entry-meta">
-          <time :datetime="post.createdAt">{{
-            formatDate(post.createdAt)
-          }}</time>
-          <button
-            v-if="adminKey.trim()"
-            class="blog-delete"
-            type="button"
-            :disabled="deletingPostId === post.id"
-            :aria-label="`Delete ${post.title}`"
-            @click="deletePost(post.id)"
+      <div v-else-if="posts.length" class="blog-content-layout">
+        <div class="blog-posts">
+          <article
+            v-for="(post, index) in posts"
+            :id="`blog-post-${post.id}`"
+            :key="post.id"
+            class="blog-entry"
+            :class="{ 'blog-entry-latest': index === 0 }"
           >
-            {{ deletingPostId === post.id ? "Deleting..." : "Delete" }}
-          </button>
+            <div class="blog-entry-meta">
+              <span v-if="index === 0" class="blog-latest-label">Latest post</span>
+              <time :datetime="post.createdAt">{{ formatDate(post.createdAt) }}</time>
+              <button
+                v-if="isAdmin"
+                class="blog-delete"
+                type="button"
+                :disabled="deletingPostId === post.id"
+                :aria-label="`Delete ${post.title}`"
+                @click="deletePost(post.id)"
+              >
+                {{ deletingPostId === post.id ? "Deleting..." : "Delete" }}
+              </button>
+            </div>
+            <h2>{{ post.title }}</h2>
+            <p class="blog-entry-content">{{ post.content }}</p>
+          </article>
         </div>
-        <h2>{{ post.title }}</h2>
-        <p class="blog-entry-content">{{ post.content }}</p>
-      </article>
+
+        <aside class="blog-recent" aria-labelledby="recent-posts-title">
+          <h2 id="recent-posts-title">Recent posts</h2>
+          <ul>
+            <li v-for="post in posts" :key="`recent-${post.id}`">
+              <a :href="`#blog-post-${post.id}`">
+                <time :datetime="post.createdAt">{{ formatDate(post.createdAt) }}</time>
+                <span>{{ post.title }}</span>
+              </a>
+            </li>
+          </ul>
+        </aside>
+      </div>
     </section>
   </div>
 </template>

@@ -12,7 +12,7 @@ type CreateBlogPostBody = {
 };
 
 export default defineEventHandler(async (event) => {
-  const database = requireBlogAdmin(event);
+  const database = await requireBlogAdmin(event);
   const body = await readBody<CreateBlogPostBody>(event);
 
   if (typeof body?.title !== "string" || typeof body.content !== "string") {

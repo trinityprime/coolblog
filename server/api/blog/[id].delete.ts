@@ -2,7 +2,7 @@ import { createError, defineEventHandler, getRouterParam } from "h3";
 import { requireBlogAdmin } from "../../utils/blog-database";
 
 export default defineEventHandler(async (event) => {
-  const database = requireBlogAdmin(event);
+  const database = await requireBlogAdmin(event);
   const id = getRouterParam(event, "id");
 
   if (!id) {
