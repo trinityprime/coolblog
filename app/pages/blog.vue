@@ -12,6 +12,8 @@ type BlogStatus = {
 };
 
 const posts = ref<BlogPost[]>([]);
+const route = useRoute();
+const isBlogPostRoute = computed(() => route.path.startsWith("/blog/posts/"));
 const title = ref("");
 const content = ref("");
 const adminKey = ref("");
@@ -29,6 +31,7 @@ const isAdmin = ref(false);
 const showSignIn = ref(false);
 const showStatusEditor = ref(false);
 const deletingPostId = ref<string | null>(null);
+const latestPost = computed(() => posts.value[0]!);
 
 useHead({
   title: "kouvera! — blog",
@@ -130,7 +133,10 @@ async function saveBlogStatus() {
     statusUpdatedAt.value = status.updatedAt;
     showStatusEditor.value = false;
   } catch (error) {
-    statusMessage.value = getErrorMessage(error, "The status could not be saved.");
+    statusMessage.value = getErrorMessage(
+      error,
+      "The status could not be saved.",
+    );
   } finally {
     isSavingStatus.value = false;
   }
@@ -168,7 +174,8 @@ async function deletePost(id: string) {
   saveMessage.value = "";
 
   try {
-    await $fetch(`/api/blog/${encodeURIComponent(id)}`, {
+    const endpoint: string = `/api/blog/${encodeURIComponent(id)}`;
+    await $fetch(endpoint, {
       method: "DELETE",
     });
     posts.value = posts.value.filter((post) => post.id !== id);
@@ -187,10 +194,17 @@ function formatDate(date: string) {
     new Date(date),
   );
 }
+
+function getExcerpt(postContent: string) {
+  const cleanContent = postContent.trim();
+  if (cleanContent.length <= 320) return cleanContent;
+  return `${cleanContent.slice(0, 320).trimEnd()}...`;
+}
 </script>
 
 <template>
-  <div class="blog-page">
+  <NuxtPage v-if="isBlogPostRoute" />
+  <div v-else class="blog-page">
     <section
       v-if="isAdmin"
       class="container blog-composer"
@@ -239,10 +253,12 @@ function formatDate(date: string) {
     </section>
 
     <section class="container blog-feed" aria-labelledby="blog-title">
+      <div class="banner">
+        <img src="/images/asciithread.gif" alt="ascii adventure banner" />
+      </div>
       <div class="blog-feed-heading">
         <div>
-          <p class="blog-kicker">A PERSONAL LOG</p>
-          <h1 id="blog-title">Welcome to my blog</h1>
+          <h1 id="blog-title">Welcome to my blog!</h1>
         </div>
         <button
           v-if="!isAdmin"
@@ -254,7 +270,12 @@ function formatDate(date: string) {
         >
           {{ showSignIn ? "Cancel" : "Owner sign in" }}
         </button>
-        <button v-else class="blog-sign-in-trigger" type="button" @click="signOut">
+        <button
+          v-else
+          class="blog-sign-in-trigger"
+          type="button"
+          @click="signOut"
+        >
           Sign out
         </button>
       </div>
@@ -329,7 +350,11 @@ function formatDate(date: string) {
         </p>
       </form>
 
-      <p v-if="statusMessage && !showStatusEditor" class="blog-message" role="status">
+      <p
+        v-if="statusMessage && !showStatusEditor"
+        class="blog-message"
+        role="status"
+      >
         {{ statusMessage }}
       </p>
 
@@ -348,29 +373,39 @@ function formatDate(date: string) {
 
       <div v-else-if="posts.length" class="blog-content-layout">
         <div class="blog-posts">
-          <article
-            v-for="(post, index) in posts"
-            :id="`blog-post-${post.id}`"
-            :key="post.id"
-            class="blog-entry"
-            :class="{ 'blog-entry-latest': index === 0 }"
-          >
+          <article class="blog-entry blog-entry-latest">
             <div class="blog-entry-meta">
-              <span v-if="index === 0" class="blog-latest-label">Latest post</span>
-              <time :datetime="post.createdAt">{{ formatDate(post.createdAt) }}</time>
+              <span class="blog-latest-label">Latest post</span>
+              <time :datetime="latestPost.createdAt">{{
+                formatDate(latestPost.createdAt)
+              }}</time>
               <button
                 v-if="isAdmin"
                 class="blog-delete"
                 type="button"
-                :disabled="deletingPostId === post.id"
-                :aria-label="`Delete ${post.title}`"
-                @click="deletePost(post.id)"
+                :disabled="deletingPostId === latestPost.id"
+                :aria-label="`Delete ${latestPost.title}`"
+                @click="deletePost(latestPost.id)"
               >
-                {{ deletingPostId === post.id ? "Deleting..." : "Delete" }}
+                {{
+                  deletingPostId === latestPost.id ? "Deleting..." : "Delete"
+                }}
               </button>
             </div>
-            <h2>{{ post.title }}</h2>
-            <p class="blog-entry-content">{{ post.content }}</p>
+            <h2>
+              <NuxtLink :to="`/blog/posts/${latestPost.id}`">
+                {{ latestPost.title }}
+              </NuxtLink>
+            </h2>
+            <p class="blog-entry-content">
+              {{ getExcerpt(latestPost.content) }}
+            </p>
+            <NuxtLink
+              class="blog-read-more"
+              :to="`/blog/posts/${latestPost.id}`"
+            >
+              Read full post <span aria-hidden="true">&rarr;</span>
+            </NuxtLink>
           </article>
         </div>
 
@@ -378,10 +413,12 @@ function formatDate(date: string) {
           <h2 id="recent-posts-title">Recent posts</h2>
           <ul>
             <li v-for="post in posts" :key="`recent-${post.id}`">
-              <a :href="`#blog-post-${post.id}`">
-                <time :datetime="post.createdAt">{{ formatDate(post.createdAt) }}</time>
+              <NuxtLink :to="`/blog/posts/${post.id}`">
+                <time :datetime="post.createdAt">{{
+                  formatDate(post.createdAt)
+                }}</time>
                 <span>{{ post.title }}</span>
-              </a>
+              </NuxtLink>
             </li>
           </ul>
         </aside>
